@@ -1,5 +1,7 @@
 package ru.javaops.masterjava.upload;
 
+import ru.javaops.masterjava.persist.DBIProvider;
+import ru.javaops.masterjava.persist.dao.UserDao;
 import ru.javaops.masterjava.persist.model.User;
 import ru.javaops.masterjava.persist.model.UserFlag;
 import ru.javaops.masterjava.xml.schema.ObjectFactory;
@@ -27,6 +29,10 @@ public class UserProcessor {
             final User user = new User(xmlUser.getValue(), xmlUser.getEmail(), UserFlag.valueOf(xmlUser.getFlag().value()));
             users.add(user);
         }
-        return users;
+
+        DBIProvider.init(null);
+        UserDao dao = DBIProvider.getDao(UserDao.class);
+        dao.insertAll(users.iterator());
+        return dao.getWithLimit(20);
     }
 }
