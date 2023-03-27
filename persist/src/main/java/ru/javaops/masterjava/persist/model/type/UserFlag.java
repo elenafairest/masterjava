@@ -1,4 +1,4 @@
-package ru.javaops.masterjava.persist.model;
+package ru.javaops.masterjava.persist.model.type;
 
 /**
  * gkislin
@@ -7,5 +7,5 @@ package ru.javaops.masterjava.persist.model;
 public enum UserFlag {
     active,
     deleted,
-    superuser;
+    superuser
 }
