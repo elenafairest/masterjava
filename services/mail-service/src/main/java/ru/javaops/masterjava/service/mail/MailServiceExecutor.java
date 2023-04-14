@@ -6,6 +6,8 @@ import ru.javaops.masterjava.ExceptionType;
 import ru.javaops.web.WebStateException;
 import ru.javaops.web.WsClient;
 
+import javax.activation.DataHandler;
+import javax.xml.bind.annotation.XmlMimeType;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
@@ -19,11 +21,12 @@ public class MailServiceExecutor {
 
     private static final ExecutorService mailExecutor = Executors.newFixedThreadPool(8);
 
-    public static GroupResult sendBulk(final Set<Addressee> addressees, final String subject, final String body) throws WebStateException {
+    public static GroupResult sendBulk(final Set<Addressee> addressees, final String subject, final String body,
+                                       @XmlMimeType("application/octet-stream") DataHandler dataHandler, String fileName) throws WebStateException {
         final CompletionService<MailResult> completionService = new ExecutorCompletionService<>(mailExecutor);
 
         List<Future<MailResult>> futures = StreamEx.of(addressees)
-                .map(addressee -> completionService.submit(() -> MailSender.sendTo(addressee, subject, body)))
+                .map(addressee -> completionService.submit(() -> MailSender.sendTo(addressee, subject, body, dataHandler, fileName)))
                 .toList();
 
         return new Callable<GroupResult>() {
