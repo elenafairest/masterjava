@@ -7,6 +7,7 @@ import ru.javaops.masterjava.web.WebStateException;
 import ru.javaops.masterjava.web.WsClient;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.*;
@@ -68,5 +69,17 @@ public class MailServiceExecutor {
                 }
             }
         }.call();
+    }
+
+    public static void sentMailJMSMessage(MailJMSMessage mailJMSMessage) {
+        Set<Addressee> addressees = MailWSClient.split(mailJMSMessage.getUsers());
+        addressees.forEach(addressee ->
+                mailExecutor.submit(() -> {
+                    try {
+                        MailSender.sendTo(addressee, mailJMSMessage.getSubject(), mailJMSMessage.getBody(), Collections.emptyList());
+                    } catch (WebStateException e) {
+                        log.error(String.valueOf(e));
+                    }
+                }));
     }
 }

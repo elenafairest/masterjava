@@ -1,6 +1,9 @@
 package ru.javaops.masterjava.service.mail.listeners;
 
 import lombok.extern.slf4j.Slf4j;
+import org.apache.activemq.ActiveMQConnectionFactory;
+import ru.javaops.masterjava.service.mail.MailJMSMessage;
+import ru.javaops.masterjava.service.mail.MailServiceExecutor;
 
 import javax.jms.*;
 import javax.naming.InitialContext;
@@ -16,10 +19,12 @@ public class JmsMailListener implements ServletContextListener {
 
     @Override
     public void contextInitialized(ServletContextEvent sce) {
+        log.info("ELSA HERE!!!");
         try {
             InitialContext initCtx = new InitialContext();
-            QueueConnectionFactory connectionFactory =
-                    (QueueConnectionFactory) initCtx.lookup("java:comp/env/jms/ConnectionFactory");
+            ActiveMQConnectionFactory connectionFactory =
+                    (ActiveMQConnectionFactory) initCtx.lookup("java:comp/env/jms/ConnectionFactory");
+            connectionFactory.setTrustAllPackages(true);
             connection = connectionFactory.createQueueConnection();
             QueueSession queueSession = connection.createQueueSession(false, Session.AUTO_ACKNOWLEDGE);
             Queue queue = (Queue) initCtx.lookup("java:comp/env/jms/queue/MailQueue");
@@ -28,13 +33,14 @@ public class JmsMailListener implements ServletContextListener {
             log.info("Listen JMS messages ...");
             listenerThread = new Thread(() -> {
                 try {
+                    log.info("ELSA I AM HERE!!! ");
                     while (!Thread.interrupted()) {
                         Message m = receiver.receive();
-                        // TODO implement mail sending
-                        if (m instanceof TextMessage) {
-                            TextMessage tm = (TextMessage) m;
-                            String text = tm.getText();
-                            log.info("Received TextMessage with text '{}'", text);
+                        if (m instanceof ObjectMessage) {
+                            ObjectMessage om = (ObjectMessage) m;
+                            MailJMSMessage mailJMSMessage = (MailJMSMessage) om.getObject();
+                            log.info("Received MailJMSMessage {}", mailJMSMessage);
+                            MailServiceExecutor.sentMailJMSMessage(mailJMSMessage);
                         }
                     }
                 } catch (Exception e) {
@@ -49,6 +55,7 @@ public class JmsMailListener implements ServletContextListener {
 
     @Override
     public void contextDestroyed(ServletContextEvent sce) {
+        log.info("ELSA Suddenly here!!!");
         if (connection != null) {
             try {
                 connection.close();

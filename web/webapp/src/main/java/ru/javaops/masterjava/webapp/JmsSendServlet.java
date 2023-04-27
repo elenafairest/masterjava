@@ -1,6 +1,8 @@
 package ru.javaops.masterjava.webapp;
 
 import lombok.extern.slf4j.Slf4j;
+import org.apache.activemq.ActiveMQConnectionFactory;
+import ru.javaops.masterjava.service.mail.MailJMSMessage;
 
 import javax.jms.*;
 import javax.naming.InitialContext;
@@ -25,7 +27,8 @@ public class JmsSendServlet extends HttpServlet {
         super.init(config);
         try {
             InitialContext initCtx = new InitialContext();
-            ConnectionFactory connectionFactory = (ConnectionFactory) initCtx.lookup("java:comp/env/jms/ConnectionFactory");
+            ActiveMQConnectionFactory connectionFactory =
+                    (ActiveMQConnectionFactory) initCtx.lookup("java:comp/env/jms/ConnectionFactory");
             connection = connectionFactory.createConnection();
             session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
             producer = session.createProducer((Destination) initCtx.lookup("java:comp/env/jms/queue/MailQueue"));
@@ -65,9 +68,10 @@ public class JmsSendServlet extends HttpServlet {
     }
 
     private synchronized String sendJms(String users, String subject, String body) throws JMSException {
-        TextMessage testMessage = session.createTextMessage();
-        testMessage.setText(subject);
-        producer.send(testMessage);
+        ObjectMessage mailMessage = session.createObjectMessage();
+        MailJMSMessage mailJMSMessage = new MailJMSMessage(users, subject, body);
+        mailMessage.setObject(mailJMSMessage);
+        producer.send(mailMessage);
         return "Successfully sent JMS message";
     }
 }
